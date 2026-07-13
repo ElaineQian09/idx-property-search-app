@@ -4,9 +4,12 @@ const router = express.Router();
 const pool = require("../db");
 
 const TABLE = "rets_property";
+const OPEN_HOUSE_TABLE = "rets_openhouse";
 
 const COL = {
   id: "id",
+  listingId: "L_ListingID",
+  displayId: "L_DisplayId",
   city: "L_City",
   zipcode: "L_Zip",
   price: "L_SystemPrice",
@@ -66,6 +69,28 @@ function parseNumber(value, name, options = {}) {
   }
 
   return parsed;
+}
+
+function parseListingId(value) {
+  const parsed = Number(value);
+
+  if (!Number.isInteger(parsed) || parsed <= 0) {
+    throw createBadRequestError("listing id must be a positive integer");
+  }
+
+  return String(parsed);
+}
+
+async function findPropertyByListingId(listingId) {
+  const sql = `
+    SELECT *
+    FROM ${quoteIdentifier(TABLE)}
+    WHERE ${quoteIdentifier(COL.listingId)} = ?
+    LIMIT 1
+  `;
+
+  const [rows] = await pool.query(sql, [listingId]);
+  return rows[0] || null;
 }
 
 router.get("/", async (req, res) => {
@@ -189,9 +214,7 @@ router.get("/", async (req, res) => {
             ${quoteIdentifier(COL.price)} AS price,
             ${quoteIdentifier(COL.beds)} AS beds,
             ${quoteIdentifier(COL.baths)} AS baths,
-            ${quoteIdentifier("L_Address")} AS address,
-            ${quoteIdentifier("L_State")} AS state,
-            ${quoteIdentifier("L_Status")} AS status,
+            
             ${quoteIdentifier("PhotoCount")} AS photoCount
         FROM ${quoteIdentifier(TABLE)}
         ${whereClause}
@@ -215,6 +238,78 @@ router.get("/", async (req, res) => {
     }
 
     console.error("GET /api/properties failed:", error);
+
+    return res.status(500).json({
+      error: "Internal server error"
+    });
+  }
+});
+
+router.get("/:id/openhouses", async (req, res) => {
+  try {
+    const listingId = parseListingId(req.params.id);
+    const property = await findPropertyByListingId(listingId);
+
+    if (!property) {
+      return res.status(404).json({
+        error: "Property not found"
+      });
+    }
+
+    const sql = `
+      SELECT
+        id,
+        ${quoteIdentifier(COL.listingId)} AS listingId,
+        ${quoteIdentifier(COL.displayId)} AS displayId,
+        OpenHouseDate AS openHouseDate,
+        OH_StartTime AS startTime,
+        OH_EndTime AS endTime,
+        OH_StartDate AS startDate,
+        OH_EndDate AS endDate,
+        all_data AS allData
+      FROM ${quoteIdentifier(OPEN_HOUSE_TABLE)}
+      WHERE ${quoteIdentifier(COL.listingId)} = ?
+      ORDER BY OpenHouseDate ASC, OH_StartTime ASC
+    `;
+
+    const [rows] = await pool.query(sql, [property[COL.listingId]]);
+
+    return res.status(200).json(rows);
+  } catch (error) {
+    if (error.statusCode === 400) {
+      return res.status(400).json({
+        error: error.message
+      });
+    }
+
+    console.error("GET /api/properties/:id/openhouses failed:", error);
+
+    return res.status(500).json({
+      error: "Internal server error"
+    });
+  }
+});
+
+router.get("/:id", async (req, res) => {
+  try {
+    const listingId = parseListingId(req.params.id);
+    const property = await findPropertyByListingId(listingId);
+
+    if (!property) {
+      return res.status(404).json({
+        error: "Property not found"
+      });
+    }
+
+    return res.status(200).json(property);
+  } catch (error) {
+    if (error.statusCode === 400) {
+      return res.status(400).json({
+        error: error.message
+      });
+    }
+
+    console.error("GET /api/properties/:id failed:", error);
 
     return res.status(500).json({
       error: "Internal server error"
