@@ -10,6 +10,20 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+app.use((req, res, next) => {
+  const startedAt = Date.now();
+  const timestamp = new Date().toISOString();
+
+  res.on("finish", () => {
+    const durationMs = Date.now() - startedAt;
+    console.log(
+      `[${timestamp}] ${req.method} ${req.originalUrl} ${res.statusCode} ${durationMs}ms`
+    );
+  });
+
+  next();
+});
+
 const PORT = process.env.PORT || 3000;
 
 app.get("/api/health", async (req, res) => {
