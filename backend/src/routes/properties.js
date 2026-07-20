@@ -10,11 +10,14 @@ const COL = {
   id: "id",
   listingId: "L_ListingID",
   displayId: "L_DisplayId",
+  address: "L_Address",
   city: "L_City",
+  state: "L_State",
   zipcode: "L_Zip",
   price: "L_SystemPrice",
   beds: "L_Keyword2",
-  baths: "LM_Dec_3"
+  baths: "LM_Dec_3",
+  photos: "L_Photos"
 };
 
 function quoteIdentifier(identifier) {
@@ -25,6 +28,16 @@ function createBadRequestError(message) {
   const error = new Error(message);
   error.statusCode = 400;
   return error;
+}
+
+function isDatabaseUnavailableError(error) {
+  return Boolean(
+    error &&
+      (error.code === "ETIMEDOUT" ||
+        error.code === "ECONNREFUSED" ||
+        error.code === "PROTOCOL_SEQUENCE_TIMEOUT" ||
+        error.code === "PROTOCOL_CONNECTION_LOST")
+  );
 }
 
 function parseInteger(value, name, options = {}) {
@@ -209,12 +222,16 @@ router.get("/", async (req, res) => {
     const dataSql = `
         SELECT
             ${quoteIdentifier(COL.id)} AS id,
+            ${quoteIdentifier(COL.listingId)} AS listingId,
+            ${quoteIdentifier(COL.displayId)} AS displayId,
+            ${quoteIdentifier(COL.address)} AS address,
             ${quoteIdentifier(COL.city)} AS city,
+            ${quoteIdentifier(COL.state)} AS state,
             ${quoteIdentifier(COL.zipcode)} AS zipcode,
             ${quoteIdentifier(COL.price)} AS price,
             ${quoteIdentifier(COL.beds)} AS beds,
             ${quoteIdentifier(COL.baths)} AS baths,
-            
+            ${quoteIdentifier(COL.photos)} AS photos,
             ${quoteIdentifier("PhotoCount")} AS photoCount
         FROM ${quoteIdentifier(TABLE)}
         ${whereClause}
@@ -239,8 +256,14 @@ router.get("/", async (req, res) => {
 
     console.error("GET /api/properties failed:", error);
 
+    if (isDatabaseUnavailableError(error)) {
+      return res.status(503).json({
+        error: "Database unavailable. Check that MySQL is running and backend .env values are correct."
+      });
+    }
+
     return res.status(500).json({
-      error: "Internal server error"
+      error: error.message || "Internal server error"
     });
   }
 });
@@ -284,8 +307,14 @@ router.get("/:id/openhouses", async (req, res) => {
 
     console.error("GET /api/properties/:id/openhouses failed:", error);
 
+    if (isDatabaseUnavailableError(error)) {
+      return res.status(503).json({
+        error: "Database unavailable. Check that MySQL is running and backend .env values are correct."
+      });
+    }
+
     return res.status(500).json({
-      error: "Internal server error"
+      error: error.message || "Internal server error"
     });
   }
 });
@@ -311,8 +340,14 @@ router.get("/:id", async (req, res) => {
 
     console.error("GET /api/properties/:id failed:", error);
 
+    if (isDatabaseUnavailableError(error)) {
+      return res.status(503).json({
+        error: "Database unavailable. Check that MySQL is running and backend .env values are correct."
+      });
+    }
+
     return res.status(500).json({
-      error: "Internal server error"
+      error: error.message || "Internal server error"
     });
   }
 });

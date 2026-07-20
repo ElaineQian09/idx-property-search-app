@@ -24,7 +24,7 @@ app.use((req, res, next) => {
   next();
 });
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 5050;
 
 app.get("/api/health", async (req, res) => {
   try {
@@ -52,6 +52,14 @@ app.use((req, res) => {
   });
 });
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
 });
+
+server.on("error", (error) => {
+  console.error("Server failed to start:", error);
+});
+
+// Some local Node setups in this project exit immediately after listen().
+// Keeping stdin resumed prevents the dev server from shutting down right away.
+process.stdin.resume();
