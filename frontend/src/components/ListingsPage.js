@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { fetchProperties } from "../api/client";
+import Pagination from "./Pagination";
 import PropertyCard from "./PropertyCard";
 import PropertyFilters, { DEFAULT_FILTERS } from "./PropertyFilters";
 
@@ -7,17 +8,25 @@ const DEFAULT_PAGE_SIZE = 20;
 
 function ListingsPage() {
   const [properties, setProperties] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(DEFAULT_PAGE_SIZE);
   const [meta, setMeta] = useState({
     total: 0,
-    limit: DEFAULT_PAGE_SIZE,
+    limit: itemsPerPage,
     offset: 0
   });
   const [filters, setFilters] = useState(DEFAULT_FILTERS);
+  const [appliedFilters, setAppliedFilters] = useState(DEFAULT_FILTERS);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
   const activeRequestRef = useRef(0);
+  const listingsPanelRef = useRef(null);
 
-  async function loadProperties(searchFilters = DEFAULT_FILTERS) {
+  async function loadProperties(
+    searchFilters = DEFAULT_FILTERS,
+    page = currentPage,
+    pageSize = itemsPerPage
+  ) {
     const requestId = activeRequestRef.current + 1;
     activeRequestRef.current = requestId;
 
@@ -27,8 +36,8 @@ function ListingsPage() {
     try {
       const data = await fetchProperties({
         ...searchFilters,
-        limit: DEFAULT_PAGE_SIZE,
-        offset: 0
+        limit: pageSize,
+        offset: (page - 1) * pageSize
       });
 
       if (activeRequestRef.current !== requestId) {
@@ -38,7 +47,7 @@ function ListingsPage() {
       setProperties(Array.isArray(data.results) ? data.results : []);
       setMeta({
         total: Number(data.total) || 0,
-        limit: Number(data.limit) || DEFAULT_PAGE_SIZE,
+        limit: Number(data.limit) || pageSize,
         offset: Number(data.offset) || 0
       });
     } catch (error) {
@@ -49,7 +58,7 @@ function ListingsPage() {
       setProperties([]);
       setMeta({
         total: 0,
-        limit: DEFAULT_PAGE_SIZE,
+        limit: pageSize,
         offset: 0
       });
       setErrorMessage(error.message);
@@ -64,29 +73,61 @@ function ListingsPage() {
     loadProperties(DEFAULT_FILTERS);
   }, []);
 
+  function handleFiltersChange(nextFilters) {
+    setCurrentPage(1);
+    setFilters(nextFilters);
+  }
+
   function handleSearch(nextFilters) {
-    loadProperties(nextFilters);
+    const nextPage = 1;
+    setAppliedFilters(nextFilters);
+    setCurrentPage(nextPage);
+    loadProperties(nextFilters, nextPage, itemsPerPage);
   }
 
   function handleClear(nextFilters) {
-    loadProperties(nextFilters);
+    const nextPage = 1;
+    setAppliedFilters(nextFilters);
+    setCurrentPage(nextPage);
+    loadProperties(nextFilters, nextPage, itemsPerPage);
+  }
+
+  function handlePageChange(nextPage) {
+    const totalPages = Math.ceil(meta.total / itemsPerPage);
+
+    if (
+      nextPage === currentPage ||
+      nextPage < 1 ||
+      nextPage > totalPages ||
+      isLoading
+    ) {
+      return;
+    }
+
+    listingsPanelRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "start"
+    });
+    setCurrentPage(nextPage);
+    loadProperties(appliedFilters, nextPage, itemsPerPage);
   }
 
   const visibleCount = properties.length;
   const startCount = meta.offset + (visibleCount > 0 ? 1 : 0);
   const endCount = meta.offset + visibleCount;
+  const totalPages = Math.ceil(meta.total / itemsPerPage);
 
   return (
     <main className="page-shell">
       <section className="hero">
-        <p className="hero__eyebrow">Week 6</p>
+        <p className="hero__eyebrow">IDX Exchange</p>
         <h1>Property Listings</h1>
         <p className="hero__description">
           Browse live property data pulled from the Express API and refine it with filters.
         </p>
       </section>
 
-      <section className="listings-panel">
+      <section ref={listingsPanelRef} className="listings-panel">
         <div className="listings-panel__header">
           <div>
             <h2>Available Homes</h2>
@@ -100,7 +141,7 @@ function ListingsPage() {
 
         <PropertyFilters
           filters={filters}
-          onFiltersChange={setFilters}
+          onFiltersChange={handleFiltersChange}
           onSearch={handleSearch}
           onClear={handleClear}
           isLoading={isLoading}
@@ -116,14 +157,23 @@ function ListingsPage() {
 
         {!isLoading && !errorMessage ? (
           visibleCount > 0 ? (
-            <div className="property-grid">
-              {properties.map((property) => (
-                <PropertyCard
-                  key={property.listingId || property.id}
-                  property={property}
-                />
-              ))}
-            </div>
+            <>
+              <div className="property-grid">
+                {properties.map((property) => (
+                  <PropertyCard
+                    key={property.listingId || property.id}
+                    property={property}
+                  />
+                ))}
+              </div>
+
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={handlePageChange}
+                isLoading={isLoading}
+              />
+            </>
           ) : (
             <div className="status-card">
               No properties found for the current filters.
