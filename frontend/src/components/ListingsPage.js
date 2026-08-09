@@ -122,9 +122,6 @@ function ListingsPage() {
       <section className="hero">
         <p className="hero__eyebrow">IDX Exchange</p>
         <h1>Property Listings</h1>
-        <p className="hero__description">
-          Browse live property data pulled from the Express API and refine it with filters.
-        </p>
       </section>
 
       <section ref={listingsPanelRef} className="listings-panel">

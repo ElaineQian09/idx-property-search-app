@@ -1,4 +1,5 @@
-import { getPrimaryPhotoUrl } from "../utils/propertyPhotos";
+import { Link, useInRouterContext } from "react-router-dom";
+import PropertyImageCarousel from "./PropertyImageCarousel";
 
 function formatPrice(price) {
   const numericPrice = Number(price);
@@ -32,23 +33,31 @@ function formatBedsBaths(property) {
 }
 
 function PropertyCard({ property }) {
-  const photoUrl = getPrimaryPhotoUrl(property.photos);
-
-  return (
-    <article className="property-card">
-      <div className="property-card__image-wrapper">
-        <img
-          className="property-card__image"
-          src={photoUrl}
-          alt={formatAddress(property)}
-        />
-      </div>
+  const isInRouterContext = useInRouterContext();
+  const listingId = property.listingId || property.id;
+  const address = formatAddress(property);
+  const photosValue = property.L_Photos || property.photos;
+  const cardContent = (
+    <>
+      <PropertyImageCarousel photos={photosValue} alt={address} />
 
       <div className="property-card__body">
         <p className="property-card__price">{formatPrice(property.price)}</p>
-        <p className="property-card__address">{formatAddress(property)}</p>
+        <p className="property-card__address">{address}</p>
         <p className="property-card__meta">{formatBedsBaths(property)}</p>
       </div>
+    </>
+  );
+
+  return (
+    <article className="property-card">
+      {isInRouterContext && listingId ? (
+        <Link className="property-card__link" to={`/property/${listingId}`}>
+          {cardContent}
+        </Link>
+      ) : (
+        cardContent
+      )}
     </article>
   );
 }

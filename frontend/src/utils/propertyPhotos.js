@@ -1,4 +1,4 @@
-const FALLBACK_IMAGE =
+export const FALLBACK_IMAGE =
   "https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=1200&q=80";
 
 function normalizePhotoEntry(photo) {
@@ -21,9 +21,9 @@ function normalizePhotoEntry(photo) {
   return null;
 }
 
-export function getPrimaryPhotoUrl(photosValue) {
+export function getPhotoUrls(photosValue) {
   if (!photosValue) {
-    return FALLBACK_IMAGE;
+    return [FALLBACK_IMAGE];
   }
 
   let parsedPhotos = photosValue;
@@ -32,21 +32,27 @@ export function getPrimaryPhotoUrl(photosValue) {
     try {
       parsedPhotos = JSON.parse(photosValue);
     } catch (error) {
-      return FALLBACK_IMAGE;
+      return [FALLBACK_IMAGE];
     }
   }
 
   if (!Array.isArray(parsedPhotos) || parsedPhotos.length === 0) {
-    return FALLBACK_IMAGE;
+    return [FALLBACK_IMAGE];
   }
+
+  const normalizedUrls = [];
 
   for (const photo of parsedPhotos) {
     const url = normalizePhotoEntry(photo);
 
     if (url) {
-      return url;
+      normalizedUrls.push(url);
     }
   }
 
-  return FALLBACK_IMAGE;
+  return normalizedUrls.length > 0 ? normalizedUrls : [FALLBACK_IMAGE];
+}
+
+export function getPrimaryPhotoUrl(photosValue) {
+  return getPhotoUrls(photosValue)[0];
 }

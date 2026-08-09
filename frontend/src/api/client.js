@@ -48,3 +48,11 @@ async function request(path) {
 export function fetchProperties(params = {}) {
   return request(`/api/properties${buildQueryString(params)}`);
 }
+
+export function fetchPropertyById(id) {
+  return request(`/api/properties/${id}`);
+}
+
+export function fetchPropertyOpenHouses(id) {
+  return request(`/api/properties/${id}/openhouses`);
+}

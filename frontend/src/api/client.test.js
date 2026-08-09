@@ -1,4 +1,8 @@
-import { fetchProperties } from "./client";
+import {
+  fetchProperties,
+  fetchPropertyById,
+  fetchPropertyOpenHouses
+} from "./client";
 
 describe("fetchProperties", () => {
   afterEach(() => {
@@ -60,5 +64,31 @@ describe("fetchProperties", () => {
     await expect(fetchProperties()).rejects.toThrow(
       "Cannot reach the backend. Make sure the Express server is running on port 5050."
     );
+  });
+
+  test("requests a single property by id", async () => {
+    const payload = {
+      L_ListingID: "123"
+    };
+
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: jest.fn().mockResolvedValue(payload)
+    });
+
+    await expect(fetchPropertyById("123")).resolves.toEqual(payload);
+    expect(global.fetch).toHaveBeenCalledWith("/api/properties/123");
+  });
+
+  test("requests open houses for a property", async () => {
+    const payload = [{ id: 1 }];
+
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: jest.fn().mockResolvedValue(payload)
+    });
+
+    await expect(fetchPropertyOpenHouses("123")).resolves.toEqual(payload);
+    expect(global.fetch).toHaveBeenCalledWith("/api/properties/123/openhouses");
   });
 });
