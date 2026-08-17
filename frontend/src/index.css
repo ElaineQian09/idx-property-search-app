@@ -81,6 +81,7 @@ img {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
   gap: 16px;
   margin-bottom: 24px;
 }
@@ -93,6 +94,42 @@ img {
 .listings-panel__count {
   margin: 0;
   color: var(--muted);
+}
+
+.sort-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: end;
+}
+
+.sort-controls__field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 170px;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.sort-controls__field span {
+  font-weight: 600;
+}
+
+.sort-controls__field select {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid rgba(77, 57, 33, 0.18);
+  border-radius: 14px;
+  background: rgba(255, 253, 249, 0.95);
+  color: var(--text);
+  font: inherit;
+}
+
+.sort-controls__field select:focus {
+  outline: 2px solid rgba(182, 92, 50, 0.25);
+  outline-offset: 1px;
+  border-color: rgba(182, 92, 50, 0.4);
 }
 
 .filters-form {
@@ -193,6 +230,32 @@ img {
   color: #8f2d1b;
   border-color: rgba(143, 45, 27, 0.18);
   background: #fff2ed;
+}
+
+.error-boundary {
+  max-width: 640px;
+  margin: 0 auto;
+  text-align: left;
+}
+
+.error-boundary__title {
+  margin: 0 0 12px;
+  font-size: clamp(2rem, 4vw, 3rem);
+  line-height: 0.95;
+}
+
+.error-boundary__message {
+  margin: 0;
+  color: var(--muted);
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+.error-boundary__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 20px;
 }
 
 .property-grid {

@@ -5,6 +5,21 @@ import PropertyCard from "./PropertyCard";
 import PropertyFilters, { DEFAULT_FILTERS } from "./PropertyFilters";
 
 const DEFAULT_PAGE_SIZE = 20;
+const SORT_OPTIONS = [
+  { value: "", label: "Default Order" },
+  { value: "L_SystemPrice", label: "Price" },
+  { value: "OnMarketDate", label: "Date Listed" },
+  { value: "LM_Int2_3", label: "Square Feet" },
+  { value: "L_Keyword2", label: "Beds" }
+];
+const SORT_ORDER_OPTIONS = [
+  { value: "asc", label: "Ascending" },
+  { value: "desc", label: "Descending" }
+];
+const DEFAULT_SORT = {
+  sortBy: "",
+  sortOrder: "asc"
+};
 
 function ListingsPage() {
   const [properties, setProperties] = useState([]);
@@ -17,6 +32,7 @@ function ListingsPage() {
   });
   const [filters, setFilters] = useState(DEFAULT_FILTERS);
   const [appliedFilters, setAppliedFilters] = useState(DEFAULT_FILTERS);
+  const [appliedSort, setAppliedSort] = useState(DEFAULT_SORT);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
   const activeRequestRef = useRef(0);
@@ -25,7 +41,8 @@ function ListingsPage() {
   async function loadProperties(
     searchFilters = DEFAULT_FILTERS,
     page = currentPage,
-    pageSize = itemsPerPage
+    pageSize = itemsPerPage,
+    sortState = appliedSort
   ) {
     const requestId = activeRequestRef.current + 1;
     activeRequestRef.current = requestId;
@@ -34,8 +51,17 @@ function ListingsPage() {
     setErrorMessage("");
 
     try {
+      const requestSort =
+        sortState.sortBy !== ""
+          ? {
+              sortBy: sortState.sortBy,
+              sortOrder: sortState.sortOrder
+            }
+          : {};
+
       const data = await fetchProperties({
         ...searchFilters,
+        ...requestSort,
         limit: pageSize,
         offset: (page - 1) * pageSize
       });
@@ -70,7 +96,7 @@ function ListingsPage() {
   }
 
   useEffect(() => {
-    loadProperties(DEFAULT_FILTERS);
+    loadProperties(DEFAULT_FILTERS, 1, itemsPerPage, DEFAULT_SORT);
   }, []);
 
   function handleFiltersChange(nextFilters) {
@@ -81,15 +107,28 @@ function ListingsPage() {
   function handleSearch(nextFilters) {
     const nextPage = 1;
     setAppliedFilters(nextFilters);
+    setAppliedSort(DEFAULT_SORT);
     setCurrentPage(nextPage);
-    loadProperties(nextFilters, nextPage, itemsPerPage);
+    loadProperties(nextFilters, nextPage, itemsPerPage, DEFAULT_SORT);
   }
 
   function handleClear(nextFilters) {
     const nextPage = 1;
     setAppliedFilters(nextFilters);
+    setAppliedSort(DEFAULT_SORT);
     setCurrentPage(nextPage);
-    loadProperties(nextFilters, nextPage, itemsPerPage);
+    loadProperties(nextFilters, nextPage, itemsPerPage, DEFAULT_SORT);
+  }
+
+  function handleSortChange(nextSort) {
+    const normalizedSort = nextSort.sortBy
+      ? nextSort
+      : DEFAULT_SORT;
+    const nextPage = 1;
+
+    setAppliedSort(normalizedSort);
+    setCurrentPage(nextPage);
+    loadProperties(appliedFilters, nextPage, itemsPerPage, normalizedSort);
   }
 
   function handlePageChange(nextPage) {
@@ -109,7 +148,7 @@ function ListingsPage() {
       block: "start"
     });
     setCurrentPage(nextPage);
-    loadProperties(appliedFilters, nextPage, itemsPerPage);
+    loadProperties(appliedFilters, nextPage, itemsPerPage, appliedSort);
   }
 
   const visibleCount = properties.length;
@@ -133,6 +172,49 @@ function ListingsPage() {
                 ? `Showing ${startCount}-${endCount} of ${meta.total} properties`
                 : `Showing 0 of ${meta.total} properties`}
             </p>
+          </div>
+
+          <div className="sort-controls" aria-label="Sort listings">
+            <label className="sort-controls__field">
+              <span>Sort By</span>
+              <select
+                name="sortBy"
+                value={appliedSort.sortBy}
+                onChange={(event) =>
+                  handleSortChange({
+                    sortBy: event.target.value,
+                    sortOrder: appliedSort.sortOrder
+                  })
+                }
+              >
+                {SORT_OPTIONS.map((option) => (
+                  <option key={option.value || "default"} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="sort-controls__field">
+              <span>Direction</span>
+              <select
+                name="sortOrder"
+                value={appliedSort.sortOrder}
+                onChange={(event) =>
+                  handleSortChange({
+                    sortBy: appliedSort.sortBy,
+                    sortOrder: event.target.value
+                  })
+                }
+                disabled={!appliedSort.sortBy}
+              >
+                {SORT_ORDER_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
           </div>
         </div>
 

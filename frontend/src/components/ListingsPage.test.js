@@ -210,4 +210,132 @@ describe("ListingsPage", () => {
     });
     expect(container.querySelector(".pagination")).toBeNull();
   });
+
+  test("applies sort params and preserves them across page changes", async () => {
+    fetchProperties
+      .mockResolvedValueOnce({
+        total: 40,
+        limit: 20,
+        offset: 0,
+        results: [buildProperty(1)]
+      })
+      .mockResolvedValueOnce({
+        total: 40,
+        limit: 20,
+        offset: 0,
+        results: [buildProperty(2)]
+      })
+      .mockResolvedValueOnce({
+        total: 40,
+        limit: 20,
+        offset: 20,
+        results: [buildProperty(3)]
+      });
+
+    await renderComponent();
+    await flushUpdates();
+
+    changeField('select[name="sortBy"]', "L_SystemPrice");
+    await flushUpdates();
+
+    expect(fetchProperties).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        limit: 20,
+        offset: 0,
+        sortBy: "L_SystemPrice",
+        sortOrder: "asc"
+      })
+    );
+
+    clickButton("2");
+    await flushUpdates();
+
+    expect(fetchProperties).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        limit: 20,
+        offset: 20,
+        sortBy: "L_SystemPrice",
+        sortOrder: "asc"
+      })
+    );
+  });
+
+  test("resets sort when new filters are applied", async () => {
+    fetchProperties
+      .mockResolvedValueOnce({
+        total: 40,
+        limit: 20,
+        offset: 0,
+        results: [buildProperty(1)]
+      })
+      .mockResolvedValueOnce({
+        total: 40,
+        limit: 20,
+        offset: 0,
+        results: [buildProperty(2, "Portland")]
+      })
+      .mockResolvedValueOnce({
+        total: 20,
+        limit: 20,
+        offset: 0,
+        results: [buildProperty(3, "Austin")]
+      });
+
+    await renderComponent();
+    await flushUpdates();
+
+    changeField('select[name="sortBy"]', "L_SystemPrice");
+    await flushUpdates();
+
+    changeField('input[name="city"]', "Austin");
+    await submitFilters();
+    await flushUpdates();
+
+    expect(fetchProperties).toHaveBeenLastCalledWith({
+      city: "Austin",
+      limit: 20,
+      offset: 0
+    });
+  });
+
+  test("resets sort when filters are cleared", async () => {
+    fetchProperties
+      .mockResolvedValueOnce({
+        total: 40,
+        limit: 20,
+        offset: 0,
+        results: [buildProperty(1)]
+      })
+      .mockResolvedValueOnce({
+        total: 40,
+        limit: 20,
+        offset: 0,
+        results: [buildProperty(2)]
+      })
+      .mockResolvedValueOnce({
+        total: 40,
+        limit: 20,
+        offset: 0,
+        results: [buildProperty(3)]
+      });
+
+    await renderComponent();
+    await flushUpdates();
+
+    changeField('select[name="sortBy"]', "L_SystemPrice");
+    await flushUpdates();
+
+    clickButton("Clear Filters");
+    await flushUpdates();
+
+    expect(fetchProperties).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        limit: 20,
+        offset: 0
+      })
+    );
+    expect(fetchProperties.mock.lastCall[0]).not.toHaveProperty("sortBy");
+    expect(fetchProperties.mock.lastCall[0]).not.toHaveProperty("sortOrder");
+  });
 });

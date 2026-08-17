@@ -31,6 +31,33 @@ describe("fetchProperties", () => {
     );
   });
 
+  test("includes sort params when requesting sorted properties", async () => {
+    const payload = {
+      total: 2,
+      limit: 20,
+      offset: 0,
+      results: [{ listingId: "123" }, { listingId: "456" }]
+    };
+
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: jest.fn().mockResolvedValue(payload)
+    });
+
+    await expect(
+      fetchProperties({
+        sortBy: "L_SystemPrice",
+        sortOrder: "asc",
+        limit: 20,
+        offset: 0
+      })
+    ).resolves.toEqual(payload);
+
+    expect(global.fetch).toHaveBeenCalledWith(
+      "/api/properties?sortBy=L_SystemPrice&sortOrder=asc&limit=20&offset=0"
+    );
+  });
+
   test("omits empty query params", async () => {
     global.fetch = jest.fn().mockResolvedValue({
       ok: true,

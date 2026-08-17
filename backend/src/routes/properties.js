@@ -20,6 +20,13 @@ const COL = {
   photos: "L_Photos"
 };
 
+const SORTABLE_COLUMNS = new Set([
+  COL.price,
+  "OnMarketDate",
+  "LM_Int2_3",
+  COL.beds
+]);
+
 function quoteIdentifier(identifier) {
   return `\`${identifier.replace(/`/g, "``")}\``;
 }
@@ -84,6 +91,42 @@ function parseNumber(value, name, options = {}) {
   return parsed;
 }
 
+function parseSortBy(value) {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  const sortBy = String(value).trim();
+
+  if (!sortBy) {
+    throw createBadRequestError("sortBy cannot be empty");
+  }
+
+  if (!SORTABLE_COLUMNS.has(sortBy)) {
+    throw createBadRequestError(`sortBy must be one of: ${Array.from(SORTABLE_COLUMNS).join(", ")}`);
+  }
+
+  return sortBy;
+}
+
+function parseSortOrder(value) {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  const sortOrder = String(value).trim().toLowerCase();
+
+  if (!sortOrder) {
+    throw createBadRequestError("sortOrder cannot be empty");
+  }
+
+  if (sortOrder !== "asc" && sortOrder !== "desc") {
+    throw createBadRequestError("sortOrder must be either asc or desc");
+  }
+
+  return sortOrder;
+}
+
 function parseListingId(value) {
   const parsed = Number(value);
 
@@ -115,6 +158,8 @@ router.get("/", async (req, res) => {
       "maxPrice",
       "beds",
       "baths",
+      "sortBy",
+      "sortOrder",
       "limit",
       "offset"
     ]);
@@ -160,6 +205,17 @@ router.get("/", async (req, res) => {
       min: 0
     });
 
+    const sortBy = parseSortBy(req.query.sortBy);
+    const sortOrder = parseSortOrder(req.query.sortOrder);
+
+    if (sortOrder !== undefined && sortBy === undefined) {
+      throw createBadRequestError("sortOrder requires sortBy");
+    }
+
+    const orderByClause = sortBy
+      ? `ORDER BY ${quoteIdentifier(sortBy)} ${sortOrder}, ${quoteIdentifier(COL.id)} ASC`
+      : `ORDER BY ${quoteIdentifier(COL.id)} ASC`;
+
     const conditions = [];
     const values = [];
 
@@ -170,9 +226,7 @@ router.get("/", async (req, res) => {
         throw createBadRequestError("city cannot be empty");
       }
 
-      conditions.push(
-        `LOWER(TRIM(${quoteIdentifier(COL.city)})) = LOWER(TRIM(?))`
-      );
+      conditions.push(`${quoteIdentifier(COL.city)} = ?`);
       values.push(city);
     }
 
@@ -183,7 +237,7 @@ router.get("/", async (req, res) => {
         throw createBadRequestError("zipcode cannot be empty");
       }
 
-      conditions.push(`TRIM(${quoteIdentifier(COL.zipcode)}) = ?`);
+      conditions.push(`${quoteIdentifier(COL.zipcode)} = ?`);
       values.push(zipcode);
     }
 
@@ -235,7 +289,7 @@ router.get("/", async (req, res) => {
             ${quoteIdentifier("PhotoCount")} AS photoCount
         FROM ${quoteIdentifier(TABLE)}
         ${whereClause}
-        ORDER BY ${quoteIdentifier(COL.id)}
+        ${orderByClause}
         LIMIT ${limit} OFFSET ${offset}
     `;
 
