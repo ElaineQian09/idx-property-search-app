@@ -10,6 +10,8 @@ function normalizePhotoEntry(photo) {
     return null;
   }
 
+  // RETS exports use several URL field names, while local API responses may
+  // already contain plain URLs. Normalize both forms to one list for the UI.
   const candidateKeys = ["url", "href", "Uri", "uri", "MediaURL", "mediaUrl"];
 
   for (const key of candidateKeys) {
@@ -30,6 +32,7 @@ export function getPhotoUrls(photosValue) {
 
   if (typeof photosValue === "string") {
     try {
+      // Database photo columns can be serialized JSON rather than arrays.
       parsedPhotos = JSON.parse(photosValue);
     } catch (error) {
       return [FALLBACK_IMAGE];
@@ -50,6 +53,8 @@ export function getPhotoUrls(photosValue) {
     }
   }
 
+  // A single fallback keeps image components renderable even for malformed
+  // photo data or arrays whose entries contain no usable URL.
   return normalizedUrls.length > 0 ? normalizedUrls : [FALLBACK_IMAGE];
 }
 

@@ -22,14 +22,20 @@ const property = {
   photos: ["https://example.com/1.jpg", "https://example.com/2.jpg"]
 };
 
-function renderComponent() {
+function renderComponent(cardProperty = property, withRouter = true) {
+  const card = <PropertyCard property={cardProperty} />;
+
   act(() => {
     root.render(
-      <MemoryRouter
-        future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
-      >
-        <PropertyCard property={property} />
-      </MemoryRouter>
+      withRouter ? (
+        <MemoryRouter
+          future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
+        >
+          {card}
+        </MemoryRouter>
+      ) : (
+        card
+      )
     );
   });
 }
@@ -60,5 +66,52 @@ describe("PropertyCard", () => {
       "https://example.com/1.jpg"
     );
     expect(link.textContent).toContain("1 / 2");
+  });
+
+  test("formats the listing details", () => {
+    renderComponent();
+
+    expect(container.querySelector(".property-card__price").textContent).toBe(
+      "$725,000"
+    );
+    expect(container.querySelector(".property-card__address").textContent).toBe(
+      "123 Main St Austin, TX 78701"
+    );
+    expect(container.querySelector(".property-card__meta").textContent).toBe(
+      "4 bd • 3 ba"
+    );
+  });
+
+  test("uses the property id for the listing link when listingId is unavailable", () => {
+    const propertyWithoutListingId = { ...property, listingId: undefined };
+
+    renderComponent(propertyWithoutListingId);
+
+    expect(container.querySelector('a[href="/property/123"]')).not.toBeNull();
+  });
+
+  test("renders fallback details and no link outside router context", () => {
+    renderComponent(
+      {
+        id: "456",
+        price: "not-a-price",
+        beds: null,
+        baths: undefined,
+        photos: []
+      },
+      false
+    );
+
+    expect(container.querySelector("a")).toBeNull();
+    expect(container.querySelector(".property-card__price").textContent).toBe(
+      "Price unavailable"
+    );
+    expect(container.querySelector(".property-card__address").textContent).toBe(
+      "Address unavailable"
+    );
+    expect(container.querySelector(".property-card__meta").textContent).toBe(
+      "N/A bd • N/A ba"
+    );
+    expect(container.querySelector("img").alt).toBe("Address unavailable");
   });
 });

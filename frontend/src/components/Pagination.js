@@ -5,6 +5,8 @@ function buildPageItems(currentPage, totalPages) {
     return Array.from({ length: totalPages }, (_, index) => index + 1);
   }
 
+  // Always preserve the first, current, and last page; add a small window
+  // around the current page or the nearest edge to keep controls compact.
   const pages = new Set([1, totalPages, currentPage]);
 
   if (currentPage <= 4) {
@@ -28,6 +30,7 @@ function buildPageItems(currentPage, totalPages) {
   sortedPages.forEach((page, index) => {
     const previousPage = sortedPages[index - 1];
 
+    // A gap between adjacent page numbers becomes one non-interactive ellipsis.
     if (index > 0 && page - previousPage > 1) {
       items.push(`ellipsis-${previousPage}-${page}`);
     }

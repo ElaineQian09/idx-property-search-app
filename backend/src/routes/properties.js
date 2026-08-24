@@ -28,6 +28,8 @@ const SORTABLE_COLUMNS = new Set([
 ]);
 
 function quoteIdentifier(identifier) {
+  // SQL placeholders cannot represent table or column names, so identifiers are
+  // quoted after values such as sortBy have been checked against an allowlist.
   return `\`${identifier.replace(/`/g, "``")}\``;
 }
 
@@ -216,6 +218,8 @@ router.get("/", async (req, res) => {
       ? `ORDER BY ${quoteIdentifier(sortBy)} ${sortOrder}, ${quoteIdentifier(COL.id)} ASC`
       : `ORDER BY ${quoteIdentifier(COL.id)} ASC`;
 
+    // Keep each predicate and its parameter together so the count and data
+    // queries apply exactly the same filters with parameterized values.
     const conditions = [];
     const values = [];
 
@@ -273,6 +277,8 @@ router.get("/", async (req, res) => {
     const [countRows] = await pool.query(countSql, values);
     const total = Number(countRows[0].total);
 
+    // Parsed and bounded integers can be interpolated for LIMIT/OFFSET; all
+    // user-provided filter values continue to use query placeholders.
     const dataSql = `
         SELECT
             ${quoteIdentifier(COL.id)} AS id,
