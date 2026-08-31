@@ -1,3 +1,4 @@
+import PropTypes from "prop-types";
 import { Link, useInRouterContext } from "react-router-dom";
 import PropertyImageCarousel from "./PropertyImageCarousel";
 
@@ -61,5 +62,27 @@ function PropertyCard({ property }) {
     </article>
   );
 }
+
+PropertyCard.propTypes = {
+  property: PropTypes.shape({
+    id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    listingId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    L_Photos: PropTypes.oneOfType([
+      PropTypes.string,
+      PropTypes.arrayOf(PropTypes.string)
+    ]),
+    photos: PropTypes.oneOfType([
+      PropTypes.string,
+      PropTypes.arrayOf(PropTypes.string)
+    ]),
+    price: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    address: PropTypes.string,
+    city: PropTypes.string,
+    state: PropTypes.string,
+    zipcode: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    beds: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    baths: PropTypes.oneOfType([PropTypes.string, PropTypes.number])
+  }).isRequired
+};
 
 export default PropertyCard;
