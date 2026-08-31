@@ -1,0 +1,26 @@
+name: Validate Commit Messages
+
+on:
+  pull_request:
+    branches: [develop, main]
+
+jobs:
+  conventional-commits:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Validate commit subjects
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          pattern='^(feat|fix|docs|test|refactor|chore|ci)\([a-z0-9][a-z0-9._/-]*\): .+$'
+          invalid=$(git log --format=%s "$BASE_SHA..$HEAD_SHA" | grep -Ev "$pattern" || true)
+
+          if [ -n "$invalid" ]; then
+            echo "The following commit subjects do not follow Conventional Commits:"
+            echo "$invalid"
+            exit 1
+          fi

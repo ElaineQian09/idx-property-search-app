@@ -10,20 +10,6 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-app.use((req, res, next) => {
-  const startedAt = process.hrtime.bigint();
-  const timestamp = new Date().toISOString();
-
-  res.on("finish", () => {
-    const durationMs = Number(process.hrtime.bigint() - startedAt) / 1e6;
-    console.log(
-      `[${timestamp}] ${req.method} ${req.originalUrl} ${res.statusCode} responseTimeMs=${durationMs.toFixed(2)}`
-    );
-  });
-
-  next();
-});
-
 app.get("/api/health", async (req, res) => {
   try {
     await pool.query("SELECT 1");
