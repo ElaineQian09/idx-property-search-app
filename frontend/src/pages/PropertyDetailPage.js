@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { fetchPropertyById, fetchPropertyOpenHouses } from "../api/client";
-import PropertyImageGallery from "./PropertyImageGallery";
-import PropertyMap from "./PropertyMap";
+import useDocumentTitle from "../hooks/useDocumentTitle";
+import PropertyImageGallery from "../components/PropertyImageGallery";
+import PropertyMap from "../components/PropertyMap";
 
 function formatPrice(price) {
   const numericPrice = Number(price);
@@ -182,6 +183,7 @@ function getOpenHouseRemarks(openHouse) {
 
 function PropertyDetailPage() {
   const { id } = useParams();
+  useDocumentTitle("Property Details");
   const [property, setProperty] = useState(null);
   const [openHouses, setOpenHouses] = useState([]);
   const [isLoading, setIsLoading] = useState(true);

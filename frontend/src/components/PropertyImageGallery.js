@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { FALLBACK_IMAGE, getPhotoUrls } from "../utils/propertyPhotos";
 
 function PropertyImageGallery({ photos, alt }) {
-  const photoUrls = getPhotoUrls(photos);
+  const photoUrls = useMemo(() => getPhotoUrls(photos), [photos]);
   const [activeIndex, setActiveIndex] = useState(0);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [failedIndexes, setFailedIndexes] = useState([]);
@@ -13,10 +13,17 @@ function PropertyImageGallery({ photos, alt }) {
     setFailedIndexes([]);
   }, [photos]);
 
-  const visibleIndexes = photoUrls
-    .map((_, index) => index)
-    .filter((index) => !failedIndexes.includes(index));
-  const activePool = visibleIndexes.length > 0 ? visibleIndexes : [0];
+  const visibleIndexes = useMemo(
+    () =>
+      photoUrls
+        .map((_, index) => index)
+        .filter((index) => !failedIndexes.includes(index)),
+    [failedIndexes, photoUrls]
+  );
+  const activePool = useMemo(
+    () => (visibleIndexes.length > 0 ? visibleIndexes : [0]),
+    [visibleIndexes]
+  );
   const normalizedActiveIndex = activePool.includes(activeIndex)
     ? activeIndex
     : activePool[0];
@@ -31,17 +38,17 @@ function PropertyImageGallery({ photos, alt }) {
     setIsLightboxOpen(false);
   }
 
-  function showPrevious() {
+  const showPrevious = useCallback(() => {
     const previousPosition =
       currentPoolPosition === 0 ? activePool.length - 1 : currentPoolPosition - 1;
     setActiveIndex(activePool[previousPosition]);
-  }
+  }, [activePool, currentPoolPosition]);
 
-  function showNext() {
+  const showNext = useCallback(() => {
     const nextPosition =
       currentPoolPosition === activePool.length - 1 ? 0 : currentPoolPosition + 1;
     setActiveIndex(activePool[nextPosition]);
-  }
+  }, [activePool, currentPoolPosition]);
 
   function handleImageError() {
     if (photoUrls.length <= 1) {
@@ -85,7 +92,7 @@ function PropertyImageGallery({ photos, alt }) {
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [activePool, currentPoolPosition, isLightboxOpen]);
+  }, [activePool, currentPoolPosition, isLightboxOpen, showNext, showPrevious]);
 
   return (
     <>

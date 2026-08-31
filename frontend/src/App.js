@@ -1,5 +1,5 @@
-import ListingsPage from "./components/ListingsPage";
-import PropertyDetailPage from "./components/PropertyDetailPage";
+import ListingsPage from "./pages/ListingsPage";
+import PropertyDetailPage from "./pages/PropertyDetailPage";
 import { Route, Routes } from "react-router-dom";
 
 function App() {

@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { fetchProperties } from "../api/client";
-import Pagination from "./Pagination";
-import PropertyCard from "./PropertyCard";
-import PropertyFilters, { DEFAULT_FILTERS } from "./PropertyFilters";
+import useDocumentTitle from "../hooks/useDocumentTitle";
+import Pagination from "../components/Pagination";
+import PropertyCard from "../components/PropertyCard";
+import PropertyFilters, { DEFAULT_FILTERS } from "../components/PropertyFilters";
 
 const DEFAULT_PAGE_SIZE = 20;
 const SORT_OPTIONS = [
@@ -22,6 +23,7 @@ const DEFAULT_SORT = {
 };
 
 function ListingsPage() {
+  useDocumentTitle("Property Listings");
   const [properties, setProperties] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(DEFAULT_PAGE_SIZE);
@@ -36,14 +38,15 @@ function ListingsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
   const activeRequestRef = useRef(0);
+  const initialLoadRef = useRef(false);
   const listingsPanelRef = useRef(null);
 
-  async function loadProperties(
+  const loadProperties = useCallback(async (
     searchFilters = DEFAULT_FILTERS,
     page = currentPage,
     pageSize = itemsPerPage,
     sortState = appliedSort
-  ) {
+  ) => {
     const requestId = activeRequestRef.current + 1;
     activeRequestRef.current = requestId;
 
@@ -93,11 +96,16 @@ function ListingsPage() {
         setIsLoading(false);
       }
     }
-  }
+  }, [appliedSort, currentPage, itemsPerPage]);
 
   useEffect(() => {
+    if (initialLoadRef.current) {
+      return;
+    }
+
+    initialLoadRef.current = true;
     loadProperties(DEFAULT_FILTERS, 1, itemsPerPage, DEFAULT_SORT);
-  }, []);
+  }, [itemsPerPage, loadProperties]);
 
   function handleFiltersChange(nextFilters) {
     setCurrentPage(1);
